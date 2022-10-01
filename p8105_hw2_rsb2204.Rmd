@@ -1,0 +1,12 @@
+---
+title: "Homework 2"
+author: "Riya Bhilegaonkar"
+date: "2022-10-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+

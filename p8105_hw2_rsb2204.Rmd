@@ -2,11 +2,132 @@
 title: "Homework 2"
 author: "Riya Bhilegaonkar"
 date: "2022-10-01"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Problem 0
 
+```{r load_libraries}
+library(tidyverse)
+library(readxl)
+```
+
+### Problem 1
+
+Below we import and clean data from `NYC_Transit_Subway_Entrance_And_Exit_Data.csv`. 
+
+```{r}
+trans_ent = 
+  read_csv(
+    "data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+    col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>% 
+  janitor::clean_names() %>% 
+  select(
+    line, station_name, station_latitude, station_longitude, 
+    starts_with("route"), entry, exit_only, vending, entrance_type, 
+    ada) %>% 
+  mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
+```
+
+This dataset contains data points on NYC transit data, the variables the dataset contains is line, station_line, station_langitude, station_longitude, route1 to route11, entry, exit_only, vending, entrance_type and ada. The dimension of the dataset is 1868 X 20.
+To obtain a tidy dataset we would need to convert `route` variables from wide to long format. To clean up the dataset upon import, we update variable names, and select columns that will be used in the questions and update the `entry` variable to a logical variable. As part of data import, we specify that `Route` columns 8-11 should be character vectors for consistency with 1-7.
+
+The distinct stations can be found using the below code chunk:
+```{r}
+q1 = trans_ent %>% 
+  select(station_name, line) %>% 
+  distinct
+nrow(q1)
+```
+
+There are 465 distinct stations.
+
+The number of stations that are ADA compliant are found using the below code chunk:
+
+```{r}
+q2 <- trans_ent %>% 
+  filter(ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+
+nrow(q2)
+```
+
+There are 84 stations that are ADA compliant.
+
+
+The proportion of station entrances / exits without vending allow entrance?
+
+```{r}
+trans_ent %>% 
+  filter(vending == "NO") %>% 
+  pull(entry) %>% 
+  mean
+```
+
+Reformating the data so that the route number and route name are distinct variables. The number of distinct stations that serve the A train and the number that are ADA compliant are found using the below code.
+
+```{r}
+q3 <- trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A") %>% 
+  select(station_name, line) %>% 
+  distinct
+nrow(q3)
+
+q4 <- trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A", ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+
+nrow(q4)
+```
+
+The number of distinct stations that serve the A train is 60. The number of stations that serve the A train, that are ADA compliant is 17.
+
+### Problem 2
+Reading and cleaning the Mr. Trash Wheel sheet:
+```{r}
+mr.trash_wheel = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet=1, na="") %>% janitor::clean_names() %>%
+  select(-x15, -x16, -x17
+    ) %>% drop_na() %>% mutate(dumpster = as.double(dumpster), sports_balls = as.integer(sports_balls), mr = "yes")
+View(mr.trash_wheel)
+
+```
+
+Reading and cleaning the Professor Trash Wheel sheet:
+```{r}
+prof.trash_wheel = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet=2) %>%janitor::clean_names() %>%
+  mutate(sports_balls = as.integer(sports_balls), prof = "yes" ) %>%
+  drop_na()
+View(prof.trash_wheel)
+```
+
+Combining the two datasets:
+```{r}
+trash_wheel <- full_join(mr.trash_wheel, prof.trash_wheel)
+View(trash_wheel)
+```
+
+The combined dataset results in data points from the the Mr. Trash Wheel (a water-wheel vessel) and Professor Trash Wheel dataset .This includes data on variables such as the dumpster number, date or collection, amount of total litter (weight in tons and volume in cubic yards), litter type (plastic bottles, polystyrene, cigarette butts, glass bottles, grocery bags, chip bags, sports balls) and number of homes powered. The total number of observations in the resulting dataset is `r nrow(trash_wheel)`. An example of a key variable is `weight_tons` where the values represent the weight of trash collected by Mr. Trash Wheel or Professor Trash Wheel in tons.
+
+The total weight of trash collected by professor trash wheel is `r sum(prof.trash_wheel$weight_tons)`.
+
+The total number of sports balls collected by Mr. Trash Wheel in 2020 is 856, calculated through the below code.
+```{r}
+trash2020 <- mr.trash_wheel %>% filter(year == 2020) 
+sum(trash2020$sports_balls)
+```
+
+### Problem 3
